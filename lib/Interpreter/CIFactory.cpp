@@ -93,7 +93,7 @@ namespace {
     container_t m_Saved;
 
   public:
-    
+
     void addArgument(const char* arg, std::string value = std::string()) {
       m_Saved.push_back(std::make_pair(arg,std::move(value)));
     }
@@ -855,6 +855,7 @@ namespace {
   }
 
   static void AddRuntimeIncludePaths(llvm::StringRef ClingBin,
+                                     llvm::StringRef LLVMDir,
                                      clang::HeaderSearchOptions& HOpts) {
     if (HOpts.Verbose)
       cling::log() << "Adding runtime include paths:\n";
@@ -884,6 +885,14 @@ namespace {
           if (llvm::sys::fs::is_directory(P.str()))
             utils::AddIncludePaths(P.str(), HOpts, nullptr);
         }
+      }
+    }
+
+    llvm::SmallString<512> P2(LLVMDir);
+    if (!P2.empty()) {
+      llvm::sys::path::append(P2, "include");
+      if (llvm::sys::fs::is_directory(P2.str())) {
+        utils::AddIncludePaths(P2.str(), HOpts, nullptr);
       }
     }
   }
@@ -1489,7 +1498,7 @@ namespace {
             const unsigned ID = Diags->getCustomDiagID(
                                        clang::DiagnosticsEngine::Level::Error,
                                        "Problems loading PCH: '%0'.");
-            
+
             Diags->Report(ID) << PCHFile;
             // If this was the only error, then don't let it stop anything
             if (Diags->getClient()->getNumErrors() == 1)
@@ -1680,7 +1689,7 @@ namespace {
       // -nobuiltininc
       clang::HeaderSearchOptions& HOpts = CI->getHeaderSearchOpts();
       if (CI->getHeaderSearchOpts().UseBuiltinIncludes)
-        AddRuntimeIncludePaths(ClingBin, HOpts);
+        AddRuntimeIncludePaths(ClingBin, LLVMDir, HOpts);
 
       // Write a marker to know the rest of the output is from clang
       if (COpts.Verbose)
